@@ -18,6 +18,9 @@ c = []
 global z
 z = 0
 
+global isPivotDone
+isPivotDone = False
+
 #read file
 def readFile():
 	fileName = sys.argv[1]
@@ -75,12 +78,16 @@ def pivot():
 	global a
 	global c
 	global z
+	global isPivotDone
 
 	enterings = []
 	enteringIndexes = []
-	print n
+
+	isCompelte = True
 	for i in range(n):
+		
 		if c[i]>0:
+			isCompelte = False
 			isAllPositive = True
 			for j in range(m):
 				if a[j][i]<0:
@@ -88,15 +95,20 @@ def pivot():
 			if isAllPositive!=True:
 				enterings.append(i)
 				enteringIndexes.append(N[i])
+	if isCompelte:
+		print "Pivot compelte!"
+		isPivotDone = True
+		return
 
 	if len(enterings) == 0:
 		print "UNBOUNDED"
-		sys.exit(0)
+		isPivotDone = True
+		return
 
 	enteringIndex = min(enteringIndexes)
 	entering = enterings[enteringIndexes.index(enteringIndex)]
 
-	print enteringIndex
+	#print enteringIndex  #the index of entering variable
 
 	#select leaving variable
 	leavingIndexes = []
@@ -112,19 +124,55 @@ def pivot():
 		if minValue == values[i]:
 			leavings.append(B[leavingIndexes[i]])
         
-	leaving = min(leavings)
-	print leaving
+	leavingIndex = min(leavings)
+	#print leavingIndex        #the index of leaving variable
 
 	#compute z
-	i = B.index(leaving)
+	i = B.index(leavingIndex)
 	j = N.index(enteringIndex)
 	z = z + abs(c[j]*b[i]/a[i][j])
-	print z
+
+	#print z   #the objective value in next dictionary
+
+	#compute new B, b, N a and c
+	indexOfLeavingInArrary = B.index(leavingIndex)
+	indexOfEnteringInArray = N.index(enteringIndex)
+	#change B, b, a in the row of leaving variable
+	B[indexOfLeavingInArrary] = enteringIndex
+	N[indexOfEnteringInArray] = leavingIndex
+	b[indexOfLeavingInArrary] = -b[indexOfLeavingInArrary]/a[indexOfLeavingInArrary][indexOfEnteringInArray]
+	
+	for i in range(n):
+		if i != indexOfEnteringInArray:
+			a[indexOfLeavingInArrary][i] = -a[indexOfLeavingInArrary][i]/a[indexOfLeavingInArrary][indexOfEnteringInArray]
+	a[indexOfLeavingInArrary][indexOfEnteringInArray] = 1/a[indexOfLeavingInArrary][indexOfEnteringInArray]
+	#change b, a not in the row of leaving variable
+	for i in range(m):
+		if i != indexOfLeavingInArrary:
+			b[i] = b[i] + a[i][indexOfEnteringInArray]*b[indexOfLeavingInArrary]
+			for j in range(n):
+				if j != indexOfEnteringInArray:
+					a[i][j] = a[i][j] + a[i][indexOfEnteringInArray]*a[indexOfLeavingInArrary][j]
+			a[i][indexOfEnteringInArray] = a[i][indexOfEnteringInArray]*a[indexOfLeavingInArrary][indexOfEnteringInArray]
+	#change c
+	for i in range(n):
+		if i != indexOfEnteringInArray:
+			c[i] = c[i] + c[indexOfEnteringInArray]*a[indexOfLeavingInArrary][i]
+	c[indexOfEnteringInArray] = c[indexOfEnteringInArray]*a[indexOfLeavingInArrary][indexOfEnteringInArray]
+	
+
+
+
 
 def main():
+	global isPivotDone
+	numberOfPivots = 0
 	readFile()
-	while True:
+	while isPivotDone == False:
 		pivot()
+		numberOfPivots = numberOfPivots + 1
+	print z
+	print numberOfPivots - 1
 
 
 
